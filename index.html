@@ -136,11 +136,9 @@
       lastIndex = index;
       symbolEl.textContent = currentSymbols[index];
 
-      if (currentSymbols[index] === 'O') {
-        symbolEl.style.fontSize = 'calc(min(142vw, 142vh) * 0.85)';
-      } else {
-        symbolEl.style.fontSize = 'min(142vw, 142vh)';
-      }
+      symbolEl.style.fontSize = (currentSymbols[index] === 'O') 
+        ? 'calc(min(142vw, 142vh) * 0.85)'
+        : 'min(142vw, 142vh)';
 
       const colorIndex = Math.floor(Math.random() * currentColors.length);
       symbolEl.style.color = currentColors[colorIndex];
@@ -183,7 +181,6 @@
 
     intervalSelect.addEventListener('change', () => {
       if(running){
-        showRandomSymbol();
         restartInterval();
       }
     });
