@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Football Reaction Training</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: black;
+      font-family: -apple-system, BlinkMacSystemFont, Arial, Helvetica, sans-serif;
+      overflow: hidden;
+    }
+
+    body {
+      position: fixed;
+      inset: 0;
+    }
+
+    .controls {
+      position: fixed;
+      top: env(safe-area-inset-top, 16px);
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      z-index: 10;
+    }
+
+    .container {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .symbol {
+      color: #39ff14;
+      font-size: min(95vw, 95vh);
+      line-height: 1;
+      user-select: none;
+    }
+
+    button, select {
+      padding: 8px 14px;
+      font-size: 15px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      background: #39ff14;
+      color: black;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="controls">
+    <button id="toggleBtn">Start</button>
+    <select id="intervalSelect">
+      <option value="2000">2s</option>
+      <option value="3000" selected>3s</option>
+      <option value="5000">5s</option>
+      <option value="8000">8s</option>
+    </select>
+    <button id="colorToggleBtn">Random Color: Off</button>
+    <button id="soundToggleBtn">Sound: Off</button>
+  </div>
+
+  <div class="container">
+    <div id="symbol" class="symbol"></div>
+  </div>
+
+  <script>
+    const symbols = ['0', '<', '>'];
+    const symbolEl = document.getElementById('symbol');
+    const toggleBtn = document.getElementById('toggleBtn');
+    const intervalSelect = document.getElementById('intervalSelect');
+    const colorToggleBtn = document.getElementById('colorToggleBtn');
+    const soundToggleBtn = document.getElementById('soundToggleBtn');
+
+    let intervalId = null;
+    let running = false;
+    let lastIndex = -1;
+    let randomColorMode = false;
+    let soundOn = false;
+
+    const colors = ['red','orange','green','yellow','blue','purple','pink'];
+    const clickAudio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA='); // placeholder silent audio
+
+    // Unlock audio on first user gesture
+    function unlockAudio() {
+      clickAudio.play().catch(() => {});
+    }
+
+    function showRandomSymbol() {
+      let index;
+      do {
+        index = Math.floor(Math.random() * symbols.length);
+      } while (index === lastIndex);
+
+      lastIndex = index;
+      symbolEl.textContent = symbols[index];
+
+      // Color logic
+      if(randomColorMode) {
+        const colorIndex = Math.floor(Math.random() * colors.length);
+        symbolEl.style.color = colors[colorIndex];
+      } else {
+        symbolEl.style.color = '#39ff14';
+      }
+
+      // Sound logic
+      if(soundOn) {
+        clickAudio.currentTime = 0;
+        clickAudio.play().catch(() => {});
+      }
+    }
+
+    function restartInterval() {
+      clearInterval(intervalId);
+      intervalId = setInterval(showRandomSymbol, Number(intervalSelect.value));
+    }
+
+    function startTraining() {
+      if (running) return;
+      running = true;
+      showRandomSymbol();
+      restartInterval();
+      toggleBtn.textContent = 'Stop';
+    }
+
+    function stopTraining() {
+      running = false;
+      clearInterval(intervalId);
+      intervalId = null;
+      lastIndex = -1;
+      symbolEl.textContent = '';
+      toggleBtn.textContent = 'Start';
+    }
+
+    toggleBtn.addEventListener('click', () => {
+      unlockAudio(); // unlock sound on first tap
+      running ? stopTraining() : startTraining();
+    });
+
+    intervalSelect.addEventListener('change', () => {
+      if (running) {
+        showRandomSymbol();
+        restartInterval();
+      }
+    });
+
+    colorToggleBtn.addEventListener('click', () => {
+      randomColorMode = !randomColorMode;
+      colorToggleBtn.textContent = 'Random Color: ' + (randomColorMode ? 'On' : 'Off');
+    });
+
+    soundToggleBtn.addEventListener('click', () => {
+      unlockAudio(); // unlock sound
+      soundOn = !soundOn;
+      soundToggleBtn.textContent = 'Sound: ' + (soundOn ? 'On' : 'Off');
+    });
+  </script>
+</body>
+</html>
