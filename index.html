@@ -52,7 +52,7 @@
       border-radius: 8px;
       border: none;
       cursor: pointer;
-      background: #39ff14;
+      background: white;
       color: black;
       font-weight: bold;
     }
@@ -90,7 +90,7 @@
     let soundOn = false;
 
     const colors = ['red','orange','green','yellow','blue','purple','pink'];
-    const clickAudio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=');
+    const clickAudio = new Audio('mixkit-cool-interface-click-tone-2568.wav');
 
     function unlockAudio() {
       clickAudio.play().catch(() => {});
@@ -104,6 +104,13 @@
 
       lastIndex = index;
       symbolEl.textContent = symbols[index];
+
+      // Adjust O size by 15% smaller
+      if (symbols[index] === 'O') {
+        symbolEl.style.fontSize = 'min(142vw, 142vh) * 0.85';
+      } else {
+        symbolEl.style.fontSize = 'min(142vw, 142vh)';
+      }
 
       if(randomColorMode) {
         const colorIndex = Math.floor(Math.random() * colors.length);
