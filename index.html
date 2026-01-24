@@ -23,12 +23,14 @@
     .controls {
       position: fixed;
       top: env(safe-area-inset-top, 16px);
-      left: 16px;
+      left: 0;
+      width: 100%;
       display: flex;
-      flex-direction: column;
+      flex-direction: row;
+      justify-content: space-around;
       gap: 10px;
-      align-items: flex-start;
       z-index: 10;
+      transition: opacity 0.3s;
     }
 
     .container {
@@ -59,7 +61,7 @@
   </style>
 </head>
 <body>
-  <div class="controls">
+  <div class="controls" id="controls">
     <button id="toggleBtn">Start</button>
     <select id="intervalSelect">
       <option value="2000">2s</option>
@@ -67,7 +69,7 @@
       <option value="5000">5s</option>
       <option value="8000">8s</option>
     </select>
-    <button id="colorToggleBtn">Random Color: Off</button>
+    <button id="defaultToggleBtn">Default: On</button>
     <button id="soundToggleBtn">Sound: Off</button>
   </div>
 
@@ -76,48 +78,73 @@
   </div>
 
   <script>
-    const symbols = ['←', '→', 'O'];
+    let symbols = ['←','→','O'];
+    let colors = ['#39ff14'];
+    let customSymbols = [];
+    let customColors = [];
     const symbolEl = document.getElementById('symbol');
     const toggleBtn = document.getElementById('toggleBtn');
     const intervalSelect = document.getElementById('intervalSelect');
-    const colorToggleBtn = document.getElementById('colorToggleBtn');
+    const defaultToggleBtn = document.getElementById('defaultToggleBtn');
     const soundToggleBtn = document.getElementById('soundToggleBtn');
+    const controlsDiv = document.getElementById('controls');
 
     let intervalId = null;
     let running = false;
     let lastIndex = -1;
-    let randomColorMode = false;
+    let defaultOn = true;
     let soundOn = false;
 
-    const colors = ['red','orange','green','yellow','blue','purple','pink'];
     const clickAudio = new Audio('mixkit-cool-interface-click-tone-2568.wav');
 
     function unlockAudio() {
       clickAudio.play().catch(() => {});
     }
 
+    function promptCustomInputs() {
+      const typeInput = prompt('Symbol or Colour?');
+      if(!typeInput) return;
+      let type = typeInput.toLowerCase();
+
+      if(type === 'symbol') {
+        const input = prompt('Enter your symbols separated by commas');
+        if(input) {
+          const userSymbols = input.split(',').map(s => s.trim()).filter(s => s);
+          if(userSymbols.length > 0 && !userSymbols.includes('O')) userSymbols.push('O');
+          customSymbols = userSymbols;
+        }
+      } else if(type === 'colour' || type === 'color') {
+        const input = prompt('Enter the colours you would like to use separated by commas');
+        if(input) {
+          const userColors = input.split(',').map(c => c.trim()).filter(c => c);
+          if(userColors.length > 0) customColors = userColors;
+        }
+      }
+    }
+
     function showRandomSymbol() {
+      let currentSymbols = defaultOn ? ['←','→','O'] : (customSymbols.length > 0 ? customSymbols : ['O']);
+      let currentColors = defaultOn ? ['#39ff14'] : (customColors.length > 0 ? customColors : ['#39ff14']);
+
       let index;
       do {
-        index = Math.floor(Math.random() * symbols.length);
-      } while (index === lastIndex);
+        index = Math.floor(Math.random() * currentSymbols.length);
+      } while (index === lastIndex && currentSymbols.length > 1);
 
       lastIndex = index;
-      symbolEl.textContent = symbols[index];
+      symbolEl.textContent = currentSymbols[index];
 
-      // Adjust O size by 15% smaller
-      if (symbols[index] === 'O') {
+      if (currentSymbols[index] === 'O') {
         symbolEl.style.fontSize = 'calc(min(142vw, 142vh) * 0.85)';
       } else {
         symbolEl.style.fontSize = 'min(142vw, 142vh)';
       }
 
-      // Set color
-      symbolEl.style.color = randomColorMode ? colors[Math.floor(Math.random() * colors.length)] : '#39ff14';
+      const colorIndex = Math.floor(Math.random() * currentColors.length);
+      symbolEl.style.color = currentColors[colorIndex];
 
-      // Play sound, including for O symbol, ensuring it always triggers
       if(soundOn) {
-        const newAudio = clickAudio.cloneNode(); // clone to allow overlapping or repeated play
+        const newAudio = clickAudio.cloneNode();
         newAudio.play().catch(() => {});
       }
     }
@@ -128,8 +155,10 @@
     }
 
     function startTraining() {
-      if (running) return;
+      if(running) return;
       running = true;
+      controlsDiv.style.opacity = '0.1';
+      if(!defaultOn) promptCustomInputs();
       showRandomSymbol();
       restartInterval();
       toggleBtn.textContent = 'Stop';
@@ -137,6 +166,7 @@
 
     function stopTraining() {
       running = false;
+      controlsDiv.style.opacity = '1';
       clearInterval(intervalId);
       intervalId = null;
       lastIndex = -1;
@@ -150,15 +180,21 @@
     });
 
     intervalSelect.addEventListener('change', () => {
-      if (running) {
+      if(running){
         showRandomSymbol();
         restartInterval();
       }
     });
 
-    colorToggleBtn.addEventListener('click', () => {
-      randomColorMode = !randomColorMode;
-      colorToggleBtn.textContent = 'Random Color: ' + (randomColorMode ? 'On' : 'Off');
+    defaultToggleBtn.addEventListener('click', () => {
+      defaultOn = !defaultOn;
+      defaultToggleBtn.textContent = 'Default: ' + (defaultOn ? 'On' : 'Off');
+      if(defaultOn){
+        customSymbols = [];
+        customColors = [];
+      } else if(!running){
+        promptCustomInputs();
+      }
     });
 
     soundToggleBtn.addEventListener('click', () => {
