@@ -93,8 +93,10 @@
     const clickAudio = new Audio('mixkit-cool-interface-click-tone-2568.wav');
 
     function unlockAudio() {
-      clickAudio.play().catch(() => {});
-    }
+      clickAudio.play().then(() => {
+        clickAudio.pause();
+        clickAudio.currentTime = 0;
+      }).catch(() => {});
 
     function showRandomSymbol() {
       let index;
