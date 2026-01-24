@@ -90,11 +90,16 @@
     let soundOn = false;
 
     const colors = ['red','orange','green','yellow','blue','purple','pink'];
-    const clickAudio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA='); // placeholder silent audio
 
-    // Unlock audio on first user gesture
+    // ✅ REAL SOUND FILE (replace placeholder)
+    const clickAudio = new Audio('mixkit-cool-interface-click-tone-2568.wav');
+
+    // Unlock audio on first user gesture (iOS / mobile friendly)
     function unlockAudio() {
-      clickAudio.play().catch(() => {});
+      clickAudio.play().then(() => {
+        clickAudio.pause();
+        clickAudio.currentTime = 0;
+      }).catch(() => {});
     }
 
     function showRandomSymbol() {
@@ -107,7 +112,7 @@
       symbolEl.textContent = symbols[index];
 
       // Color logic
-      if(randomColorMode) {
+      if (randomColorMode) {
         const colorIndex = Math.floor(Math.random() * colors.length);
         symbolEl.style.color = colors[colorIndex];
       } else {
@@ -115,7 +120,7 @@
       }
 
       // Sound logic
-      if(soundOn) {
+      if (soundOn) {
         clickAudio.currentTime = 0;
         clickAudio.play().catch(() => {});
       }
@@ -144,7 +149,7 @@
     }
 
     toggleBtn.addEventListener('click', () => {
-      unlockAudio(); // unlock sound on first tap
+      unlockAudio();
       running ? stopTraining() : startTraining();
     });
 
@@ -161,10 +166,11 @@
     });
 
     soundToggleBtn.addEventListener('click', () => {
-      unlockAudio(); // unlock sound
+      unlockAudio();
       soundOn = !soundOn;
       soundToggleBtn.textContent = 'Sound: ' + (soundOn ? 'On' : 'Off');
     });
   </script>
 </body>
 </html>
+
