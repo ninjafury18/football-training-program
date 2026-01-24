@@ -68,7 +68,6 @@
       <option value="3000" selected>3s</option>
       <option value="5000">5s</option>
       <option value="8000">8s</option>
-      <option value="voice">Voice</option>
     </select>
     <button id="defaultToggleBtn">Default: On</button>
     <button id="soundToggleBtn">Sound: Off</button>
@@ -96,7 +95,6 @@
     let lastIndex = -1;
     let defaultOn = true;
     let soundOn = false;
-    let recognition = null;
 
     const clickAudio = new Audio('mixkit-cool-interface-click-tone-2568.wav');
 
@@ -155,36 +153,7 @@
 
     function restartInterval() {
       clearInterval(intervalId);
-      if(intervalSelect.value !== 'voice') {
-        intervalId = setInterval(showRandomSymbol, Number(intervalSelect.value));
-      }
-    }
-
-    function startVoiceRecognition() {
-      if(!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) return;
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognition = new SpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = false;
-      recognition.lang = 'en-US';
-
-      recognition.onresult = (event) => {
-        for(let i = event.resultIndex; i < event.results.length; ++i){
-          if(event.results[i].isFinal){
-            const transcript = event.results[i][0].transcript.trim().toLowerCase();
-            if(transcript === 'next') showRandomSymbol();
-          }
-        }
-      };
-
-      recognition.start();
-    }
-
-    function stopVoiceRecognition() {
-      if(recognition){
-        recognition.stop();
-        recognition = null;
-      }
+      intervalId = setInterval(showRandomSymbol, Number(intervalSelect.value));
     }
 
     function startTraining() {
@@ -193,11 +162,7 @@
       controlsDiv.style.opacity = '0.1';
       if(!defaultOn && !customInputsDone) promptCustomInputs();
       showRandomSymbol();
-      if(intervalSelect.value === 'voice'){
-        startVoiceRecognition();
-      } else {
-        restartInterval();
-      }
+      restartInterval();
       toggleBtn.textContent = 'Stop';
     }
 
@@ -205,7 +170,6 @@
       running = false;
       controlsDiv.style.opacity = '1';
       clearInterval(intervalId);
-      stopVoiceRecognition();
       intervalId = null;
       lastIndex = -1;
       symbolEl.textContent = '';
@@ -219,9 +183,8 @@
 
     intervalSelect.addEventListener('change', () => {
       if(running){
-        stopVoiceRecognition();
-        if(intervalSelect.value === 'voice') startVoiceRecognition();
-        else restartInterval();
+        showRandomSymbol();
+        restartInterval();
       }
     });
 
