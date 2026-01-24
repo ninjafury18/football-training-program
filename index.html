@@ -23,11 +23,11 @@
     .controls {
       position: fixed;
       top: env(safe-area-inset-top, 16px);
-      left: 50%;
-      transform: translateX(-50%);
+      left: 16px;
       display: flex;
+      flex-direction: column;
       gap: 10px;
-      align-items: center;
+      align-items: flex-start;
       z-index: 10;
     }
 
@@ -41,7 +41,7 @@
 
     .symbol {
       color: #39ff14;
-      font-size: min(95vw, 95vh);
+      font-size: min(142vw, 142vh);
       line-height: 1;
       user-select: none;
     }
@@ -76,7 +76,7 @@
   </div>
 
   <script>
-    const symbols = ['O', '→', '←'];
+    const symbols = ['←', '→', 'O'];
     const symbolEl = document.getElementById('symbol');
     const toggleBtn = document.getElementById('toggleBtn');
     const intervalSelect = document.getElementById('intervalSelect');
@@ -90,16 +90,10 @@
     let soundOn = false;
 
     const colors = ['red','orange','green','yellow','blue','purple','pink'];
+    const clickAudio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=');
 
-    // ✅ REAL SOUND FILE (replace placeholder)
-    const clickAudio = new Audio('mixkit-cool-interface-click-tone-2568.wav');
-
-    // Unlock audio on first user gesture (iOS / mobile friendly)
     function unlockAudio() {
-      clickAudio.play().then(() => {
-        clickAudio.pause();
-        clickAudio.currentTime = 0;
-      }).catch(() => {});
+      clickAudio.play().catch(() => {});
     }
 
     function showRandomSymbol() {
@@ -111,16 +105,14 @@
       lastIndex = index;
       symbolEl.textContent = symbols[index];
 
-      // Color logic
-      if (randomColorMode) {
+      if(randomColorMode) {
         const colorIndex = Math.floor(Math.random() * colors.length);
         symbolEl.style.color = colors[colorIndex];
       } else {
         symbolEl.style.color = '#39ff14';
       }
 
-      // Sound logic
-      if (soundOn) {
+      if(soundOn) {
         clickAudio.currentTime = 0;
         clickAudio.play().catch(() => {});
       }
@@ -173,4 +165,3 @@
   </script>
 </body>
 </html>
-
