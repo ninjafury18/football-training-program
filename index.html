@@ -68,6 +68,7 @@
       <option value="3000" selected>3s</option>
       <option value="5000">5s</option>
       <option value="8000">8s</option>
+      <option value="voice">Voice</option>
     </select>
     <button id="defaultToggleBtn">Default: On</button>
     <button id="soundToggleBtn">Sound: Off</button>
@@ -82,6 +83,7 @@
     let colors = ['#39ff14'];
     let customSymbols = [];
     let customColors = [];
+    let customInputsDone = false;
     const symbolEl = document.getElementById('symbol');
     const toggleBtn = document.getElementById('toggleBtn');
     const intervalSelect = document.getElementById('intervalSelect');
@@ -94,6 +96,7 @@
     let lastIndex = -1;
     let defaultOn = true;
     let soundOn = false;
+    let recognition = null;
 
     const clickAudio = new Audio('mixkit-cool-interface-click-tone-2568.wav');
 
@@ -120,6 +123,7 @@
           if(userColors.length > 0) customColors = userColors;
         }
       }
+      customInputsDone = true;
     }
 
     function showRandomSymbol() {
@@ -151,16 +155,49 @@
 
     function restartInterval() {
       clearInterval(intervalId);
-      intervalId = setInterval(showRandomSymbol, Number(intervalSelect.value));
+      if(intervalSelect.value !== 'voice') {
+        intervalId = setInterval(showRandomSymbol, Number(intervalSelect.value));
+      }
+    }
+
+    function startVoiceRecognition() {
+      if(!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) return;
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = false;
+      recognition.lang = 'en-US';
+
+      recognition.onresult = (event) => {
+        for(let i = event.resultIndex; i < event.results.length; ++i){
+          if(event.results[i].isFinal){
+            const transcript = event.results[i][0].transcript.trim().toLowerCase();
+            if(transcript === 'next') showRandomSymbol();
+          }
+        }
+      };
+
+      recognition.start();
+    }
+
+    function stopVoiceRecognition() {
+      if(recognition){
+        recognition.stop();
+        recognition = null;
+      }
     }
 
     function startTraining() {
       if(running) return;
       running = true;
       controlsDiv.style.opacity = '0.1';
-      if(!defaultOn) promptCustomInputs();
+      if(!defaultOn && !customInputsDone) promptCustomInputs();
       showRandomSymbol();
-      restartInterval();
+      if(intervalSelect.value === 'voice'){
+        startVoiceRecognition();
+      } else {
+        restartInterval();
+      }
       toggleBtn.textContent = 'Stop';
     }
 
@@ -168,6 +205,7 @@
       running = false;
       controlsDiv.style.opacity = '1';
       clearInterval(intervalId);
+      stopVoiceRecognition();
       intervalId = null;
       lastIndex = -1;
       symbolEl.textContent = '';
@@ -181,8 +219,9 @@
 
     intervalSelect.addEventListener('change', () => {
       if(running){
-        showRandomSymbol();
-        restartInterval();
+        stopVoiceRecognition();
+        if(intervalSelect.value === 'voice') startVoiceRecognition();
+        else restartInterval();
       }
     });
 
@@ -192,7 +231,8 @@
       if(defaultOn){
         customSymbols = [];
         customColors = [];
-      } else if(!running){
+        customInputsDone = false;
+      } else if(!running && !customInputsDone){
         promptCustomInputs();
       }
     });
