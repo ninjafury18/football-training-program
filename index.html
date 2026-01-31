@@ -24,12 +24,13 @@
       position: fixed;
       top: env(safe-area-inset-top, 16px);
       left: 0;
-      width: 100%;
+      right: 0;
       display: flex;
-      flex-direction: row;
       justify-content: space-around;
-      gap: 10px;
+      align-items: center;
+      gap: 8px;
       z-index: 10;
+      padding: 8px;
       transition: opacity 0.3s;
     }
 
@@ -49,27 +50,34 @@
     }
 
     button, select {
-      padding: 8px 14px;
-      font-size: 15px;
+      padding: 8px 12px;
+      font-size: 14px;
       border-radius: 8px;
       border: none;
       cursor: pointer;
       background: white;
       color: black;
       font-weight: bold;
+      white-space: nowrap;
     }
   </style>
 </head>
 <body>
   <div class="controls" id="controls">
     <button id="toggleBtn">Start</button>
+
     <select id="intervalSelect">
       <option value="2000">2s</option>
       <option value="3000" selected>3s</option>
       <option value="5000">5s</option>
       <option value="8000">8s</option>
     </select>
-    <button id="defaultToggleBtn">Default: On</button>
+
+    <select id="modeSelect">
+      <option value="default" selected>Default</option>
+      <option value="custom">Custom</option>
+    </select>
+
     <button id="soundToggleBtn">Sound: Off</button>
   </div>
 
@@ -78,22 +86,22 @@
   </div>
 
   <script>
-    let symbols = ['←','→','O'];
+    const DEFAULT_SYMBOLS = ['←', '→', '●']; // full solid circle
+
+    let symbols = [...DEFAULT_SYMBOLS];
     let colors = ['#39ff14'];
-    let customSymbols = [];
-    let customColors = [];
-    let customInputsDone = false;
+
     const symbolEl = document.getElementById('symbol');
     const toggleBtn = document.getElementById('toggleBtn');
     const intervalSelect = document.getElementById('intervalSelect');
-    const defaultToggleBtn = document.getElementById('defaultToggleBtn');
+    const modeSelect = document.getElementById('modeSelect');
     const soundToggleBtn = document.getElementById('soundToggleBtn');
     const controlsDiv = document.getElementById('controls');
 
     let intervalId = null;
     let running = false;
-    let lastIndex = -1;
-    let defaultOn = true;
+    let lastSymbol = null;
+    let repeatCount = 0;
     let soundOn = false;
 
     const clickAudio = new Audio('mixkit-cool-interface-click-tone-2568.wav');
@@ -102,64 +110,54 @@
       clickAudio.play().catch(() => {});
     }
 
-    function promptCustomInputs() {
-      const typeInput = prompt('Symbol or Colour?');
-      if(!typeInput) return;
-      let type = typeInput.toLowerCase();
+    function getNextSymbol() {
+      let next;
 
-      if(type === 'symbol') {
-        const input = prompt('Enter your symbols separated by commas');
-        if(input) {
-          const userSymbols = input.split(',').map(s => s.trim()).filter(s => s);
-          if(userSymbols.length > 0 && !userSymbols.includes('O')) userSymbols.push('O');
-          customSymbols = userSymbols;
-        }
-      } else if(type === 'colour' || type === 'color') {
-        const input = prompt('Enter the colours you would like to use separated by commas');
-        if(input) {
-          const userColors = input.split(',').map(c => c.trim()).filter(c => c);
-          if(userColors.length > 0) customColors = userColors;
-        }
+      do {
+        next = symbols[Math.floor(Math.random() * symbols.length)];
+      } while (next === lastSymbol && repeatCount >= 4);
+
+      if (next === lastSymbol) {
+        repeatCount++;
+      } else {
+        repeatCount = 1;
+        lastSymbol = next;
       }
-      customInputsDone = true;
+
+      return next;
     }
 
-    function showRandomSymbol() {
-      let currentSymbols = defaultOn ? ['←','→','O'] : (customSymbols.length > 0 ? customSymbols : ['O']);
-      let currentColors = defaultOn ? ['#39ff14'] : (customColors.length > 0 ? customColors : ['#39ff14']);
+    function showSymbol() {
+      if (symbols.length === 0) return;
 
-      let index;
-      do {
-        index = Math.floor(Math.random() * currentSymbols.length);
-      } while (index === lastIndex && currentSymbols.length > 1);
+      const sym = getNextSymbol();
+      symbolEl.textContent = sym;
 
-      lastIndex = index;
-      symbolEl.textContent = currentSymbols[index];
+      if (sym === '●') {
+        symbolEl.style.fontSize = 'calc(min(142vw, 142vh) * 0.85)';
+      } else {
+        symbolEl.style.fontSize = 'min(142vw, 142vh)';
+      }
 
-      symbolEl.style.fontSize = (currentSymbols[index] === 'O') 
-        ? 'calc(min(142vw, 142vh) * 0.85)'
-        : 'min(142vw, 142vh)';
+      const colorIndex = Math.floor(Math.random() * colors.length);
+      symbolEl.style.color = colors[colorIndex];
 
-      const colorIndex = Math.floor(Math.random() * currentColors.length);
-      symbolEl.style.color = currentColors[colorIndex];
-
-      if(soundOn) {
-        const newAudio = clickAudio.cloneNode();
-        newAudio.play().catch(() => {});
+      if (soundOn) {
+        const a = clickAudio.cloneNode();
+        a.play().catch(() => {});
       }
     }
 
     function restartInterval() {
       clearInterval(intervalId);
-      intervalId = setInterval(showRandomSymbol, Number(intervalSelect.value));
+      intervalId = setInterval(showSymbol, Number(intervalSelect.value));
     }
 
     function startTraining() {
-      if(running) return;
+      if (running) return;
       running = true;
       controlsDiv.style.opacity = '0.1';
-      if(!defaultOn && !customInputsDone) promptCustomInputs();
-      showRandomSymbol();
+      showSymbol();
       restartInterval();
       toggleBtn.textContent = 'Stop';
     }
@@ -169,7 +167,8 @@
       controlsDiv.style.opacity = '1';
       clearInterval(intervalId);
       intervalId = null;
-      lastIndex = -1;
+      lastSymbol = null;
+      repeatCount = 0;
       symbolEl.textContent = '';
       toggleBtn.textContent = 'Start';
     }
@@ -180,20 +179,23 @@
     });
 
     intervalSelect.addEventListener('change', () => {
-      if(running){
-        restartInterval();
-      }
+      if (running) restartInterval();
     });
 
-    defaultToggleBtn.addEventListener('click', () => {
-      defaultOn = !defaultOn;
-      defaultToggleBtn.textContent = 'Default: ' + (defaultOn ? 'On' : 'Off');
-      if(defaultOn){
-        customSymbols = [];
-        customColors = [];
-        customInputsDone = false;
-      } else if(!running && !customInputsDone){
-        promptCustomInputs();
+    modeSelect.addEventListener('change', () => {
+      if (modeSelect.value === 'default') {
+        symbols = [...DEFAULT_SYMBOLS];
+        colors = ['#39ff14'];
+      } else {
+        const symInput = prompt('Enter your symbols separated by commas');
+        if (symInput) {
+          symbols = symInput.split(',').map(s => s.trim()).filter(Boolean);
+        }
+
+        const colorInput = prompt('Enter colours separated by commas');
+        if (colorInput) {
+          colors = colorInput.split(',').map(c => c.trim()).filter(Boolean);
+        }
       }
     });
 
