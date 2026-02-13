@@ -1,131 +1,218 @@
-<script>
-  const DEFAULT_SYMBOLS = ['<<', '>>', '●']; // full solid circle
-
-  let symbols = [...DEFAULT_SYMBOLS];
-  let colors = ['#39ff14'];
-
-  const symbolEl = document.getElementById('symbol');
-  const toggleBtn = document.getElementById('toggleBtn');
-  const intervalSelect = document.getElementById('intervalSelect');
-  const modeSelect = document.getElementById('modeSelect');
-  const soundToggleBtn = document.getElementById('soundToggleBtn');
-  const controlsDiv = document.getElementById('controls');
-
-  let intervalId = null;
-  let running = false;
-  let lastSymbol = null;
-  let repeatCount = 0;
-  let soundOn = false;
-
-  const clickAudio = new Audio('mixkit-cool-interface-click-tone-2568.wav');
-
-  function unlockAudio() {
-    clickAudio.play().catch(() => {});
-  }
-
-  function getNextSymbol() {
-    let next;
-
-    do {
-      next = symbols[Math.floor(Math.random() * symbols.length)];
-    } while (next === lastSymbol && repeatCount >= 4);
-
-    if (next === lastSymbol) {
-      repeatCount++;
-    } else {
-      repeatCount = 1;
-      lastSymbol = next;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Football Reaction Training</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: black;
+      font-family: -apple-system, BlinkMacSystemFont, Arial, Helvetica, sans-serif;
+      overflow: hidden;
     }
 
-    return next;
-  }
-
-  function showSymbol() {
-    if (symbols.length === 0) return;
-
-    const sym = getNextSymbol();
-    symbolEl.textContent = sym;
-
-    // 🔹 DEFAULT MODE circle 40% larger
-    if (modeSelect.value === 'default' && sym === '●') {
-      symbolEl.style.fontSize = 'calc(min(142vw, 142vh) * 1.4)';
-    } else {
-      symbolEl.style.fontSize = 'min(142vw, 142vh)';
+    body {
+      position: fixed;
+      inset: 0;
     }
 
-    const colorIndex = Math.floor(Math.random() * colors.length);
-    symbolEl.style.color = colors[colorIndex];
-
-    if (soundOn) {
-      const a = clickAudio.cloneNode();
-      a.play().catch(() => {});
+    .controls {
+      position: fixed;
+      top: env(safe-area-inset-top, 16px);
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      gap: 8px;
+      z-index: 10;
+      padding: 8px;
+      transition: opacity 0.3s;
     }
-  }
 
-  function restartInterval() {
-    clearInterval(intervalId);
-    intervalId = setInterval(showSymbol, Number(intervalSelect.value));
-  }
+    .container {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
 
-  function startTraining() {
-    if (running) return;
-    running = true;
-    controlsDiv.style.opacity = '0.1';
-    showSymbol();
-    restartInterval();
-    toggleBtn.textContent = 'Stop';
-  }
+    .symbol {
+      color: #39ff14;
+      font-size: min(142vw, 142vh);
+      line-height: 1;
+      user-select: none;
+    }
 
-  function stopTraining() {
-    running = false;
-    controlsDiv.style.opacity = '1';
-    clearInterval(intervalId);
-    intervalId = null;
-    lastSymbol = null;
-    repeatCount = 0;
-    symbolEl.textContent = '';
-    toggleBtn.textContent = 'Start';
-  }
+    button, select {
+      padding: 8px 12px;
+      font-size: 14px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      background: white;
+      color: black;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="controls" id="controls">
+    <button id="toggleBtn">Start</button>
 
-  toggleBtn.addEventListener('click', () => {
-    unlockAudio();
-    running ? stopTraining() : startTraining();
-  });
+    <select id="intervalSelect">
+      <option value="2000">2s</option>
+      <option value="3000" selected>3s</option>
+      <option value="5000">5s</option>
+      <option value="8000">8s</option>
+    </select>
 
-  intervalSelect.addEventListener('change', () => {
-    if (running) restartInterval();
-  });
+    <select id="modeSelect">
+      <option value="default" selected>Default</option>
+      <option value="custom">Custom</option>
+    </select>
 
-  modeSelect.addEventListener('change', () => {
-    if (modeSelect.value === 'default') {
-      symbols = [...DEFAULT_SYMBOLS];
-      colors = ['#39ff14'];
-    } else {
-      const symInput = prompt('Enter your symbols separated by commas');
-      if (symInput) {
-        symbols = symInput
-          .split(',')
-          .map(s => s.trim())
-          .filter(Boolean)
-          .map(s => {
-            // 🔹 Convert any "O" (upper/lowercase) to solid circle
-            return s.toLowerCase() === 'o' ? '●' : s;
-          });
+    <button id="soundToggleBtn">Sound: Off</button>
+  </div>
+
+  <div class="container">
+    <div id="symbol" class="symbol"></div>
+  </div>
+
+  <script>
+    const DEFAULT_SYMBOLS = ['<<', '>>', '●']; // full solid circle
+  
+    let symbols = [...DEFAULT_SYMBOLS];
+    let colors = ['#39ff14'];
+  
+    const symbolEl = document.getElementById('symbol');
+    const toggleBtn = document.getElementById('toggleBtn');
+    const intervalSelect = document.getElementById('intervalSelect');
+    const modeSelect = document.getElementById('modeSelect');
+    const soundToggleBtn = document.getElementById('soundToggleBtn');
+    const controlsDiv = document.getElementById('controls');
+  
+    let intervalId = null;
+    let running = false;
+    let lastSymbol = null;
+    let repeatCount = 0;
+    let soundOn = false;
+  
+    const clickAudio = new Audio('mixkit-cool-interface-click-tone-2568.wav');
+  
+    function unlockAudio() {
+      clickAudio.play().catch(() => {});
+    }
+  
+    function getNextSymbol() {
+      let next;
+  
+      do {
+        next = symbols[Math.floor(Math.random() * symbols.length)];
+      } while (next === lastSymbol && repeatCount >= 4);
+  
+      if (next === lastSymbol) {
+        repeatCount++;
+      } else {
+        repeatCount = 1;
+        lastSymbol = next;
       }
-
-      const colorInput = prompt('Enter colours separated by commas');
-      if (colorInput) {
-        colors = colorInput
-          .split(',')
-          .map(c => c.trim())
-          .filter(Boolean);
+  
+      return next;
+    }
+  
+    function showSymbol() {
+      if (symbols.length === 0) return;
+  
+      const sym = getNextSymbol();
+      symbolEl.textContent = sym;
+  
+      // 🔹 DEFAULT MODE circle 40% larger
+      if (modeSelect.value === 'default' && sym === '●') {
+        symbolEl.style.fontSize = 'calc(min(142vw, 142vh) * 1.4)';
+      } else {
+        symbolEl.style.fontSize = 'min(142vw, 142vh)';
+      }
+  
+      const colorIndex = Math.floor(Math.random() * colors.length);
+      symbolEl.style.color = colors[colorIndex];
+  
+      if (soundOn) {
+        const a = clickAudio.cloneNode();
+        a.play().catch(() => {});
       }
     }
-  });
-
-  soundToggleBtn.addEventListener('click', () => {
-    unlockAudio();
-    soundOn = !soundOn;
-    soundToggleBtn.textContent = 'Sound: ' + (soundOn ? 'On' : 'Off');
-  });
-</script>
+  
+    function restartInterval() {
+      clearInterval(intervalId);
+      intervalId = setInterval(showSymbol, Number(intervalSelect.value));
+    }
+  
+    function startTraining() {
+      if (running) return;
+      running = true;
+      controlsDiv.style.opacity = '0.1';
+      showSymbol();
+      restartInterval();
+      toggleBtn.textContent = 'Stop';
+    }
+  
+    function stopTraining() {
+      running = false;
+      controlsDiv.style.opacity = '1';
+      clearInterval(intervalId);
+      intervalId = null;
+      lastSymbol = null;
+      repeatCount = 0;
+      symbolEl.textContent = '';
+      toggleBtn.textContent = 'Start';
+    }
+  
+    toggleBtn.addEventListener('click', () => {
+      unlockAudio();
+      running ? stopTraining() : startTraining();
+    });
+  
+    intervalSelect.addEventListener('change', () => {
+      if (running) restartInterval();
+    });
+  
+    modeSelect.addEventListener('change', () => {
+      if (modeSelect.value === 'default') {
+        symbols = [...DEFAULT_SYMBOLS];
+        colors = ['#39ff14'];
+      } else {
+        const symInput = prompt('Enter your symbols separated by commas');
+        if (symInput) {
+          symbols = symInput
+            .split(',')
+            .map(s => s.trim())
+            .filter(Boolean)
+            .map(s => {
+              // 🔹 Convert any "O" (upper/lowercase) to solid circle
+              return s.toLowerCase() === 'o' ? '●' : s;
+            });
+        }
+  
+        const colorInput = prompt('Enter colours separated by commas');
+        if (colorInput) {
+          colors = colorInput
+            .split(',')
+            .map(c => c.trim())
+            .filter(Boolean);
+        }
+      }
+    });
+  
+    soundToggleBtn.addEventListener('click', () => {
+      unlockAudio();
+      soundOn = !soundOn;
+      soundToggleBtn.textContent = 'Sound: ' + (soundOn ? 'On' : 'Off');
+    });
+  </script>
